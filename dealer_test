@@ -1,0 +1,64 @@
+import random
+import time
+
+values = {'A': 11, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10}
+card = list(values.keys())
+player_value = 20
+
+class Dealer:
+    def __init__(self):
+        self.hand = random.choice(card)
+        self.value = sum([values[x] for x in self.hand.split()])
+        self.play = None
+        self.dealer_values = values.copy()
+
+    def hit(self):
+        self.hand += ' ' + random.choice(card)
+        self.value = sum([values[x] for x in self.hand.split()])
+        print(f"Dealer's hand:\n{self.hand}")
+        print(f"The dealer's hand is worth {self.value}.")
+
+    def stay(self):
+        print("Dealer stays.")
+        # move to game code
+        if (21 - self.value) > (21 - player_value):
+            print("player wins!")
+        else:
+            print("player loses :c")
+
+    def reveal(self):
+        print("Dealer's turn:")
+        time.sleep(1)
+        self.hit()
+
+
+dealer = Dealer()
+print(f"Dealer's hand:\n{dealer.hand}")
+print(f"The dealer's hand is worth {dealer.value}.")
+dealer.reveal()
+if 'A' in dealer.hand:
+    dealer.value = sum([values[x] for x in dealer.hand.split()])
+    # check for blackjack
+    if any(s in x for x in ['J', 'Q', 'K'] for s in dealer.hand):
+        print("Dealer Blackjack!")
+        if player_value != 21:
+            print("player loses :c")
+    # check if aces should be low
+    elif dealer.value > 21:
+        dealer.dealer_values['A'] = 1
+        dealer.value = sum([values[x] for x in dealer.hand.split()])
+    # check if > 17
+    elif 21 > dealer.value > 17:
+        dealer.stay()
+else:
+    # no aces, should loop until value > 17
+    while dealer.value < 17:
+        dealer.hit()
+        if 21 >= dealer.value >= 17:
+            dealer.stay()
+        elif dealer.value > 21:
+            print("Dealer bust!")
+            # move to game code
+            print("player wins!")
+        elif dealer.value < 17:
+            dealer.hit()
