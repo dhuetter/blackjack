@@ -1,0 +1,200 @@
+import random
+import time
+
+values = {'A': 11, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10}
+card = list(values.keys())
+
+
+class Player:
+    def __init__(self, name):
+        self.chips = 100
+        self.wager = 'n/a'
+        self.cards = random.choice(card) + ' ' + random.choice(card)
+        self.value = sum([values[x] for x in self.cards.split()])
+        self.play = True
+        self.BJ = False
+        self.name = name
+        self.player_values = values.copy()
+        self.aces = 'n/a'
+
+    def bet(self):
+        while self.wager:
+            try:
+                num = int(input("How much do you want to bet? ").strip())
+                if num > self.chips:
+                    print("You don't have that many chips!")
+                elif num == 0 or not num:
+                    print("You have to bet something!")
+                else:
+                    self.wager = num
+                    print(f"You've bet {self.wager} chips.")
+                    break
+            except ValueError:
+                print("Not a valid wager.")
+                # call at beginning of game
+
+    def deal(self):
+        # called after player places bet
+        # if play == true, player turn (i.e. loop the prompt for hit or stay); player turn ends when play == false;
+        print("Dealing...")
+        time.sleep(1)
+        print(self.cards[0])
+        time.sleep(0.5)
+        print(self.cards)
+        # should copy card values to make things repeatable
+        if 'A' in self.cards:
+            if any(s in x for x in ['J', 'Q', 'K'] for s in self.cards):
+                print("Blackjack!")
+                self.play = False
+                self.BJ = True
+                # play == false to exit while loop, BJ == True to skip dealer turn
+                Player.win(self)
+            else:
+                while self.aces:
+                    self.aces = input("Aces high or low? ").strip().lower()
+                    if self.aces == 'low':
+                        self.player_values['A'] = 1
+                        break
+                    elif self.aces == 'high':
+                        break
+                    else:
+                        print("Sorry, I didn't quite catch that.")
+                        self.aces = 'n/a'
+        # # should probably take this section out of the init and put it in game code in a while play == true loop
+        # n = input(f"Your hand is worth {self.value}. Hit or stay? ")
+        # print(n)
+        # if n.lower() == 'hit':
+        #     self.hit()
+        # elif n.lower() == 'stay':
+        #     self.stay()
+        # else:
+        #     print("You must hit or stay!")
+
+    def hit(self):
+        self.cards += ' ' + random.choice(card)
+        if 'A' in self.cards[-1]:
+            if self.value + 11 > 21:
+                self.player_values['A'] = 1
+            else:
+                while self.aces:
+                    self.aces = input("Aces high or low? ").strip().lower()
+                    if self.aces == 'low':
+                        self.player_values['A'] = 1
+                        break
+                    elif self.aces == 'high':
+                        break
+                    else:
+                        print("Sorry, I didn't quite catch that.")
+                        self.aces = 'n/a'
+            self.value = sum([values[x] for x in self.cards.split()])
+            print(self.cards)
+        if self.value == 21:
+            print(f"Your current hand is worth {self.value}!")
+            self.stay()
+        elif self.value > 21:
+            print("Bust!")
+            self.play = False
+
+    def stay(self):
+        print("Staying...")
+        time.sleep(1)
+        self.play = False
+
+    def win(self):
+        print("You win!")
+        self.chips += self.wager * 1.5
+        self.wager = 0
+        self.BJ = False
+        # called if player gets blackjack, if player closer to 21 than dealer, or if dealer bust and player does not
+
+    def lose(self):
+        print("You lose. :(")
+        self.chips -= self.wager
+        self.wager = 0
+        # called if player busts, or if dealer gets closer to 21
+
+
+class Dealer:
+    def __init__(self):
+        self.hand = random.choice(card)
+        self.value = sum([values[x] for x in self.hand.split()])
+        self.play = None
+
+    def hit(self):
+        self.hand += ' ' + random.choice(card)
+
+    def stay(self):
+        print("Dealer stays.")
+        # move to game code
+        if (21 - self.value) > (21 - Player.value):
+            Player.win()
+        else:
+            Player.lose()
+
+    def reveal(self):
+        print("Dealer's turn:")
+        time.sleep(1)
+        self.hit()
+        self.value = sum([values[x] for x in self.hand.split()])
+        print(self.hand)
+        print(self.value)
+        while self.value < 17:
+            self.hit()
+            if 21 >= self.value >= 17:
+                self.stay()
+            elif self.value > 21:
+                print("Dealer bust!")
+                # move to game code
+                Player.win()
+            elif self.value < 17:
+                self.hit()
+
+
+while True:
+    print("Welcome to Blackjack!")
+    name_in = input("What's your name? ")
+    player = Player(name_in)
+    dealer = Dealer()
+    print(f"Glad you're here, {name_in.title()}.")
+    print(f"You currently have {player.chips} chips.")
+    player.bet()
+    print("Let's get started!")
+    while player.play:
+        player.deal()
+        print(f"Your hand is worth {player.value}.")
+        print(f"The dealer has:\n{dealer.hand}\nDealer's hand is worth: {dealer.value}")
+        next_action = input("Hit or stay? ").lower().strip()
+        if next_action == 'hit':
+            player.hit()
+        elif next_action == 'stay':
+            player.stay()
+            dealer.play = True
+        else:
+            print("You must hit or stay.")
+    while not player.play and dealer.play and not player.BJ:
+        dealer.reveal()
+        if 'A' in dealer.hand:
+            if any(s in x for x in ['J', 'Q', 'K'] for s in dealer.hand):
+                print("Dealer Blackjack!")
+            if Player.value != 21:
+                Player.lose()
+
+
+
+
+# start player with 100 chips, ask player how much to bet, store in a variable
+# deal one card to dealer, two to player
+# if player has face card and an ace, print "Blackjack!!" and bet * 1.5
+#       add reward back to pocket, ask if player wants to continue
+# if player has ace and a non-face card, ask if player if aces high
+#       if yes, ace = 11, if no, ace = 1
+# (I guess I should make the deck a dictionary and update the value for Ace based on high or low)
+# after initial hand, start a while loop: "while hand < 21"
+# @ start of loop, give player a new card, calculate & print value of hand, ask if hit or stand
+# if hit, continue
+# if stand, break
+# if value == 21, break
+# if value > 21, print("Bust!") and subtract bet from pocket
+# if player stood, give dealer a second card and do the same checks from earlier
+# dealer must stand if hand >= 17, bust if >21
+# if dealer and player both have not bust
